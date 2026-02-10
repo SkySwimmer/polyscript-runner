@@ -3,7 +3,7 @@ plugins {
 	id 'maven-publish'
 }
 
-version = "a.1"
+version = "a1.0"
 group = "usr.skyswimmer"
 
 sourceCompatibility = '1.17'
@@ -66,8 +66,18 @@ artifacts {
 
 dependencies {
 	implementation project("quicktools-utils")
+	implementation project("connective-http")
 
 	implementation group: 'org.asf.cyan', name: 'Fluid', version: '1.0.0.A33'
+
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.2'
+
+	implementation 'org.ow2.asm:asm:9.4'
+	implementation 'org.ow2.asm:asm-tree:9.4'
+	implementation 'org.ow2.asm:asm-commons:9.4'
+
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.25.3'
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.25.3'
 }
 
 project.configurations.implementation.canBeResolved = true

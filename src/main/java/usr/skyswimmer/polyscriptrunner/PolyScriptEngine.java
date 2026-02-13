@@ -18,12 +18,28 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
+import usr.skyswimmer.polyscriptrunner.events.evaluate.ScriptEarlyEvaluateEvent;
+import usr.skyswimmer.polyscriptrunner.events.evaluate.ScriptEngineEarlyEvaluateEvent;
+import usr.skyswimmer.polyscriptrunner.events.evaluate.ScriptEngineEvaluateEvent;
+import usr.skyswimmer.polyscriptrunner.events.evaluate.ScriptEngineLateEvaluateEvent;
+import usr.skyswimmer.polyscriptrunner.events.evaluate.ScriptEnginePostEvaluateEvent;
+import usr.skyswimmer.polyscriptrunner.events.evaluate.ScriptEvaluateEvent;
+import usr.skyswimmer.polyscriptrunner.events.evaluate.ScriptLateEvaluateEvent;
+import usr.skyswimmer.polyscriptrunner.events.evaluate.ScriptPostEvaluateEvent;
+import usr.skyswimmer.polyscriptrunner.events.plugin.ScriptEnginePluginAppliedEvent;
+import usr.skyswimmer.polyscriptrunner.events.plugin.ScriptEnginePluginInitEvent;
+import usr.skyswimmer.polyscriptrunner.events.plugin.ScriptPluginAppliedEvent;
+import usr.skyswimmer.polyscriptrunner.events.plugin.ScriptPluginInitEvent;
+import usr.skyswimmer.polyscriptrunner.events.script.ScriptEngineSetupEvent;
+import usr.skyswimmer.polyscriptrunner.events.script.ScriptLoadedEvent;
+import usr.skyswimmer.polyscriptrunner.events.script.ScriptSetupEvent;
 import usr.skyswimmer.polyscriptrunner.importers.IPolyscriptImporter;
 import usr.skyswimmer.polyscriptrunner.plugins.IPluginInstanceProvider;
 import usr.skyswimmer.polyscriptrunner.plugins.IPolyscriptPlugin;
 import usr.skyswimmer.polyscriptrunner.plugins.embedded.importers.ScriptImporter;
 import usr.skyswimmer.quicktoolsutils.connective.logger.Log4jManagerImpl;
-
+import usr.skyswimmer.quicktoolsutils.events.Event;
+import usr.skyswimmer.quicktoolsutils.events.EventBus;
 import usr.skyswimmer.quicktoolsutils.json.JsonUtils;
 import usr.skyswimmer.quicktoolsutils.json.JsonVariablesContext;
 import usr.skyswimmer.quicktoolsutils.json.JsonVariablesProcessor;
@@ -58,6 +74,7 @@ public class PolyScriptEngine implements Closeable {
 
 	private boolean setup = false;
 	private boolean evaluated = false;
+	private boolean postEvaluated = false;
 
 	private IPluginInstanceProvider pluginProvider;
 	private HashMap<String, IPolyscriptPlugin> plugins = new LinkedHashMap<String, IPolyscriptPlugin>();
@@ -69,9 +86,6 @@ public class PolyScriptEngine implements Closeable {
 
 	private Logger logger;
 
-	// FIXME: events
-	// FIXME: event bus support
-
 	public PolyScriptEngine(File mainScriptFile, IPluginInstanceProvider pluginProvider) {
 		this.mainScriptFile = mainScriptFile;
 		this.pluginProvider = pluginProvider;
@@ -79,6 +93,86 @@ public class PolyScriptEngine implements Closeable {
 
 		// Setup importers
 		importers.put("import", new ScriptImporter());
+	}
+
+	private Event<ScriptLoadedEvent> scriptLoadedEvent = new Event<ScriptLoadedEvent>();
+
+	private Event<ScriptSetupEvent> scriptSetupEvent = new Event<ScriptSetupEvent>();
+	private Event<ScriptEngineSetupEvent> scriptEngineSetupEvent = new Event<ScriptEngineSetupEvent>();
+
+	private Event<ScriptPluginInitEvent> scriptPluginInitEvent = new Event<ScriptPluginInitEvent>();
+	private Event<ScriptEnginePluginInitEvent> scriptEnginePluginInitEvent = new Event<ScriptEnginePluginInitEvent>();
+	private Event<ScriptPluginAppliedEvent> scriptPluginAppliedEvent = new Event<ScriptPluginAppliedEvent>();
+	private Event<ScriptEnginePluginAppliedEvent> scriptEnginePluginAppliedEvent = new Event<ScriptEnginePluginAppliedEvent>();
+
+	private Event<ScriptEarlyEvaluateEvent> scriptEarlyEvaluateEvent = new Event<ScriptEarlyEvaluateEvent>();
+	private Event<ScriptEngineEarlyEvaluateEvent> scriptEngineEarlyEvaluateEvent = new Event<ScriptEngineEarlyEvaluateEvent>();
+	private Event<ScriptEvaluateEvent> scriptEvaluateEvent = new Event<ScriptEvaluateEvent>();
+	private Event<ScriptEngineEvaluateEvent> scriptEngineEvaluateEvent = new Event<ScriptEngineEvaluateEvent>();
+	private Event<ScriptLateEvaluateEvent> scriptLateEvaluateEvent = new Event<ScriptLateEvaluateEvent>();
+	private Event<ScriptEngineLateEvaluateEvent> scriptEngineLateEvaluateEvent = new Event<ScriptEngineLateEvaluateEvent>();
+
+	private Event<ScriptPostEvaluateEvent> scriptPostEvaluateEvent = new Event<ScriptPostEvaluateEvent>();
+	private Event<ScriptEnginePostEvaluateEvent> scriptEnginePostEvaluateEvent = new Event<ScriptEnginePostEvaluateEvent>();
+
+	public Event<ScriptLoadedEvent> onScriptLoaded() {
+		return scriptLoadedEvent;
+	}
+
+	public Event<ScriptSetupEvent> onScriptSetup() {
+		return scriptSetupEvent;
+	}
+
+	public Event<ScriptEngineSetupEvent> onScriptEngineSetup() {
+		return scriptEngineSetupEvent;
+	}
+
+	public Event<ScriptPluginInitEvent> onScriptPluginInit() {
+		return scriptPluginInitEvent;
+	}
+
+	public Event<ScriptEnginePluginInitEvent> onScriptEnginePluginInit() {
+		return scriptEnginePluginInitEvent;
+	}
+
+	public Event<ScriptPluginAppliedEvent> onScriptPluginApplied() {
+		return scriptPluginAppliedEvent;
+	}
+
+	public Event<ScriptEnginePluginAppliedEvent> onScriptEnginePluginApplied() {
+		return scriptEnginePluginAppliedEvent;
+	}
+
+	public Event<ScriptEarlyEvaluateEvent> onScriptEarlyEvaluate() {
+		return scriptEarlyEvaluateEvent;
+	}
+
+	public Event<ScriptEngineEarlyEvaluateEvent> onScriptEngineEarlyEvaluate() {
+		return scriptEngineEarlyEvaluateEvent;
+	}
+
+	public Event<ScriptEvaluateEvent> onScriptEvaluate() {
+		return scriptEvaluateEvent;
+	}
+
+	public Event<ScriptEngineEvaluateEvent> onScriptEngineEvaluate() {
+		return scriptEngineEvaluateEvent;
+	}
+
+	public Event<ScriptLateEvaluateEvent> onScriptLateEvaluate() {
+		return scriptLateEvaluateEvent;
+	}
+
+	public Event<ScriptEngineLateEvaluateEvent> onScriptEngineLateEvaluate() {
+		return scriptEngineLateEvaluateEvent;
+	}
+
+	public Event<ScriptPostEvaluateEvent> onScriptPostEvaluate() {
+		return scriptPostEvaluateEvent;
+	}
+
+	public Event<ScriptEnginePostEvaluateEvent> onScriptEnginePostEvaluate() {
+		return scriptEnginePostEvaluateEvent;
 	}
 
 	/**
@@ -303,6 +397,7 @@ public class PolyScriptEngine implements Closeable {
 		// Create script instance
 		PolyScript inst = new PolyScript(parent, script.getAbsoluteFile(), pathRelative, scriptWorkingDir, scriptBase,
 				scriptProcessed);
+		inst.localImports = env.imports;
 		if (parent != null)
 			parent.addedChild(inst);
 		inst.initializeScript(scriptProcessed, proc, env.localFile, env.locals, env.localsPlugins, env.globalsPlugins);
@@ -335,11 +430,23 @@ public class PolyScriptEngine implements Closeable {
 					// Load importers
 					for (IPolyscriptImporter importer : plugin.provideImporters(this))
 						this.importers.put(importer.name(), importer);
+
+					// Dispatch
+					ScriptEnginePluginAppliedEvent ev = new ScriptEnginePluginAppliedEvent(this, plugin);
+					scriptEnginePluginAppliedEvent.dispatchEvent(ev);
+					EventBus.getInstance().dispatchEvent(ev);
 				}
 
 				// Apply plugin
-				inst.addedPlugin(new LocalPolyscriptPlugin<IPolyscriptPlugin>(plugin, proc, env.globalsPlugins, proc,
-						env.localsPlugins, inst));
+				LocalPolyscriptPlugin<?> p = new LocalPolyscriptPlugin<IPolyscriptPlugin>(plugin, proc,
+						env.globalsPlugins, proc,
+						env.localsPlugins, inst);
+				inst.addedPlugin(p);
+
+				// Dispatch
+				ScriptPluginAppliedEvent ev = new ScriptPluginAppliedEvent(this, inst, p);
+				scriptPluginAppliedEvent.dispatchEvent(ev);
+				EventBus.getInstance().dispatchEvent(ev);
 			}
 		}
 		if (pluginError)
@@ -424,7 +531,7 @@ public class PolyScriptEngine implements Closeable {
 						if (!importer.importFile(importPathRelative, ctxVar, importFile, this, inst, proc, ctx))
 							continue;
 						inst.unsafe().imported(importPathRelative, ctxVar, importFile.getAbsoluteFile(), ctx);
-						env.locals.importContext(ctxVar, ctx);
+						env.imports.importContext(ctxVar, ctx);
 
 						// Found it
 						found = true;
@@ -435,6 +542,7 @@ public class PolyScriptEngine implements Closeable {
 					logger.warn("Resource import failed: " + importPathRelative + ": no matching importer");
 			}
 		}
+		inst.localImports = env.imports;
 
 		// Assign main script if needed
 		if (script.getAbsolutePath().equals(mainScriptFile.getAbsolutePath()))
@@ -461,16 +569,22 @@ public class PolyScriptEngine implements Closeable {
 		inst.initializeScript(inst.getScriptJson(), proc, env.localFile, env.locals, env.localsPlugins,
 				env.globalsPlugins);
 
+		// Send event
+		ScriptLoadedEvent ev = new ScriptLoadedEvent(this, inst);
+		scriptLoadedEvent.dispatchEvent(ev);
+		EventBus.getInstance().dispatchEvent(ev);
+
 		// If set up, call setup on script
 		if (setup) {
 			// Setup
 			setupScript(inst);
+			postSetupScript(inst);
 		}
 
 		// If already evaluated, evaluate script
 		if (evaluated) {
 			// Evaluate
-			evaluateScript(inst);
+			evaluateScript(inst, null);
 		}
 		return inst;
 	}
@@ -488,16 +602,25 @@ public class PolyScriptEngine implements Closeable {
 		for (IPolyscriptPlugin plugin : plugins.values()) {
 			logger.info("Initializing plugin: " + plugin.name());
 			plugin.init(this);
+
+			// Dispatch
+			ScriptEnginePluginInitEvent ev2 = new ScriptEnginePluginInitEvent(this, plugin);
+			scriptEnginePluginInitEvent.dispatchEvent(ev2);
+			EventBus.getInstance().dispatchEvent(ev2);
 		}
+
+		// Send event
+		ScriptEngineSetupEvent ev = new ScriptEngineSetupEvent(this);
+		scriptEngineSetupEvent.dispatchEvent(ev);
+		EventBus.getInstance().dispatchEvent(ev);
 
 		// Initialize
 		logger.info("Initializing scripts...");
 		for (PolyScript script : getAllScripts()) {
 			setupScript(script);
-			for (IPolyscriptPlugin plugin : plugins.values()) {
-				logger.info("Initializing plugin: " + plugin.name() + " on script " + script.getRelativeSourcePath());
-				plugin.setupScripts(this, script);
-			}
+		}
+		for (PolyScript script : getAllScripts()) {
+			postSetupScript(script);
 		}
 
 		// Post-initialize plugins
@@ -510,6 +633,7 @@ public class PolyScriptEngine implements Closeable {
 
 	private class ScriptEnv {
 		public JsonVariablesContext locals;
+		public JsonVariablesContext imports;
 		public JsonVariablesContext localsPlugins;
 		public JsonVariablesContext localFile;
 		public JsonVariablesContext globals;
@@ -528,6 +652,12 @@ public class PolyScriptEngine implements Closeable {
 		// Create contexts in order
 		ScriptEnv env = new ScriptEnv();
 		env.locals = new JsonVariablesContext(proc);
+		if (localScript == null)
+			env.imports = new JsonVariablesContext(proc);
+		else {
+			env.imports = localScript.localImports.duplicate(proc);
+			localScript.localImports = env.imports;
+		}
 		env.localsPlugins = new JsonVariablesContext(proc);
 		env.localFile = new JsonVariablesContext(proc);
 		if (globalVars == null) {
@@ -554,6 +684,7 @@ public class PolyScriptEngine implements Closeable {
 
 		// Assign contexts
 		proc.addContext(env.locals);
+		proc.addContext(env.imports);
 		proc.addContext(env.localsPlugins);
 		proc.addContext(env.localFile);
 		addParentContext(proc, parentInst);
@@ -616,6 +747,7 @@ public class PolyScriptEngine implements Closeable {
 		localContext.assignVariable("script", scriptProcessed, true);
 		localContext.assignVariable("scriptfullraw", WrappedJsonElement.unwrap(scriptProcessed), false);
 		localContext.assignVariable("scriptraw", scriptRaw, false);
+		localContext.importContext("context", env.imports);
 		localContext.importContext("context", env.locals);
 		localContext.importContext("plugincontext", env.localsPlugins);
 
@@ -634,17 +766,17 @@ public class PolyScriptEngine implements Closeable {
 		JsonVariablesContext contextInfo = new JsonVariablesContext(proc);
 		if (mainScript != null)
 			contextInfo.importContext("root", scriptContext(mainScript, proc));
-		for (PolyScript script : scripts.values().toArray(t -> new PolyScript[t])) {
-			String path = script.getRelativeSourcePath();
+		for (PolyScript sc : scripts.values().toArray(t -> new PolyScript[t])) {
+			String path = sc.getRelativeSourcePath();
 			String keyPath = path.replace("\\", "/").replace(".settings.json", "").replace(".json", "").replace("/",
 					".");
-			contextInfo.importContext(keyPath, scriptContext(script, proc));
+			contextInfo.importContext(keyPath, scriptContext(sc, proc));
 		}
+		proc.getRootContext().importContext("context", contextInfo);
 
 		// Populate root
 		rootContext.importContext("local", localContext);
 		rootContext.importContext("global", globalContext);
-		rootContext.importContext("context", contextInfo);
 
 		// Script files
 		JsonVariablesContext ctxFiles = new JsonVariablesContext(proc);
@@ -675,15 +807,13 @@ public class PolyScriptEngine implements Closeable {
 	private JsonVariablesContext scriptContext(PolyScript script, JsonVariablesProcessor proc) {
 		JsonVariablesContext ctx = new JsonVariablesContext(proc);
 		ctx.importContext(script.getVariablesProcessor().getRootContext().duplicate(proc));
-		for (JsonVariablesContext ct : proc.getContexts()) {
-			ctx.importContext(ct.duplicate(proc));
-		}
 		return ctx;
 	}
 
 	private void addParentContext(JsonVariablesProcessor proc, PolyScript parent) {
 		if (parent != null) {
 			proc.addContext(parent.getLocalVariablesContext().duplicate(proc));
+			proc.addContext(parent.localImports.duplicate(proc));
 			proc.addContext(parent.getLocalPluginVariablesContext().duplicate(proc));
 			proc.addContext(parent.getFileVariablesContext().duplicate(proc));
 			if (parent.getParentScript() != null)
@@ -692,9 +822,6 @@ public class PolyScriptEngine implements Closeable {
 	}
 
 	private void setupScript(PolyScript script) throws IOException {
-		// Initialize script runner
-		logger.info("Initializing script " + script.getRelativeSourcePath() + "...");
-
 		// Prepare script environment contexts
 		if (script.getVariablesProcessor() != null) {
 			synchronized (processors) {
@@ -716,6 +843,49 @@ public class PolyScriptEngine implements Closeable {
 				env.globalsPlugins);
 	}
 
+	private void postSetupScript(PolyScript script) {
+		// Initialize script runner
+		logger.info("Initializing script " + script.getRelativeSourcePath() + "...");
+
+		// Variable processor
+		JsonVariablesProcessor proc = script.getVariablesProcessor();
+
+		// Create "context" object with all contexts
+		JsonVariablesContext contextInfo = new JsonVariablesContext(proc);
+		if (mainScript != null)
+			contextInfo.importContext("root", scriptContext(mainScript, proc));
+		for (PolyScript sc : scripts.values().toArray(t -> new PolyScript[t])) {
+			String path = sc.getRelativeSourcePath();
+			String keyPath = path.replace("\\", "/").replace(".settings.json", "").replace(".json", "").replace("/",
+					".");
+			contextInfo.importContext(keyPath, scriptContext(sc, proc));
+		}
+		proc.getRootContext().importContext("context", contextInfo);
+
+		// Send event
+		ScriptSetupEvent ev = new ScriptSetupEvent(this, script);
+		scriptSetupEvent.dispatchEvent(ev);
+		EventBus.getInstance().dispatchEvent(ev);
+
+		// Init plugins
+		for (IPolyscriptPlugin plugin : plugins.values()) {
+			logger.info("Initializing plugin: " + plugin.name() + " on script " + script.getRelativeSourcePath());
+			plugin.setupScripts(this, script, script.getVariablesProcessor(),
+					script.getLocalPluginVariablesContext(), globalVarsPlugins);
+
+			// Dispatch
+			ScriptPluginInitEvent ev2 = new ScriptPluginInitEvent(this, script, script.getPlugin(plugin.name()));
+			scriptPluginInitEvent.dispatchEvent(ev2);
+			EventBus.getInstance().dispatchEvent(ev2);
+		}
+	}
+
+	private class EngineDispatchStatus {
+		private boolean early = false;
+		private boolean main = false;
+		private boolean late = false;
+	}
+
 	/**
 	 * Calls script evaluation cycle
 	 */
@@ -723,9 +893,44 @@ public class PolyScriptEngine implements Closeable {
 		if (!setup)
 			throw new IllegalStateException(
 					"Script engine not fully initialized, please call setupScripts() prior to evaluation");
-		// FIXME
-		// FIXME: make sure to have a state checker
-		// FIXME: stages: early evaluation, evaluation, late evaluation
+		if (evaluated)
+			throw new IllegalStateException("Already evaluated");
+		evaluated = true;
+
+		// Call evaluation
+		EngineDispatchStatus state = new EngineDispatchStatus();
+		for (PolyScript script : getAllScripts())
+			evaluateScript(script, state);
+
+		// Early evaluate event
+		if (state != null && !state.early) {
+			state.early = true;
+
+			// Dispatch
+			ScriptEngineEarlyEvaluateEvent ev1 = new ScriptEngineEarlyEvaluateEvent(this);
+			scriptEngineEarlyEvaluateEvent.dispatchEvent(ev1);
+			EventBus.getInstance().dispatchEvent(ev1);
+		}
+
+		// Evaluate event
+		if (state != null && !state.main) {
+			state.main = true;
+
+			// Dispatch
+			ScriptEngineEvaluateEvent ev2 = new ScriptEngineEvaluateEvent(this);
+			scriptEngineEvaluateEvent.dispatchEvent(ev2);
+			EventBus.getInstance().dispatchEvent(ev2);
+		}
+
+		// Late evaluate event
+		if (state != null && !state.late) {
+			state.late = true;
+
+			// Dispatch
+			ScriptEngineLateEvaluateEvent ev3 = new ScriptEngineLateEvaluateEvent(this);
+			scriptEngineLateEvaluateEvent.dispatchEvent(ev3);
+			EventBus.getInstance().dispatchEvent(ev3);
+		}
 	}
 
 	/**
@@ -735,15 +940,92 @@ public class PolyScriptEngine implements Closeable {
 		if (!setup)
 			throw new IllegalStateException(
 					"Script engine not fully initialized, please call setupScripts() prior to evaluation");
-		// FIXME
+		if (postEvaluated)
+			throw new IllegalStateException("Already evaluated");
+		postEvaluated = true;
+
+		// Dispatch
+		ScriptEnginePostEvaluateEvent ev1 = new ScriptEnginePostEvaluateEvent(this);
+		scriptEnginePostEvaluateEvent.dispatchEvent(ev1);
+		EventBus.getInstance().dispatchEvent(ev1);
+
+		// Call post evaluation
+		for (PolyScript script : getAllScripts())
+			postEvaluateScript(script);
 	}
 
-	private void evaluateScript(PolyScript script) {
-		// FIXME
+	private void evaluateScript(PolyScript script, EngineDispatchStatus state) {
+		// Early evaluate event
+		if (state != null && !state.early) {
+			state.early = true;
+
+			// Dispatch
+			ScriptEngineEarlyEvaluateEvent ev1 = new ScriptEngineEarlyEvaluateEvent(this);
+			scriptEngineEarlyEvaluateEvent.dispatchEvent(ev1);
+			EventBus.getInstance().dispatchEvent(ev1);
+		}
+
+		// Dispatch
+		ScriptEarlyEvaluateEvent ev1 = new ScriptEarlyEvaluateEvent(this, script);
+		scriptEarlyEvaluateEvent.dispatchEvent(ev1);
+		EventBus.getInstance().dispatchEvent(ev1);
+
+		// Early evaluate
+		for (LocalPolyscriptPlugin<?> plugin : script.getPlugins())
+			plugin.getPluginInstance().onEarlyEvaluate(this, script, script.getVariablesProcessor(),
+					script.getLocalPluginVariablesContext(), globalVarsPlugins);
+
+		// Evaluate event
+		if (state != null && !state.main) {
+			state.main = true;
+
+			// Dispatch
+			ScriptEngineEvaluateEvent ev2 = new ScriptEngineEvaluateEvent(this);
+			scriptEngineEvaluateEvent.dispatchEvent(ev2);
+			EventBus.getInstance().dispatchEvent(ev2);
+		}
+
+		// Dispatch
+		ScriptEvaluateEvent ev2 = new ScriptEvaluateEvent(this, script);
+		scriptEvaluateEvent.dispatchEvent(ev2);
+		EventBus.getInstance().dispatchEvent(ev2);
+
+		// Evaluate
+		for (LocalPolyscriptPlugin<?> plugin : script.getPlugins())
+			plugin.getPluginInstance().onEvaluate(this, script, script.getVariablesProcessor(),
+					script.getLocalPluginVariablesContext(), globalVarsPlugins);
+
+		// Late evaluate event
+		if (state != null && !state.late) {
+			state.late = true;
+
+			// Dispatch
+			ScriptEngineLateEvaluateEvent ev3 = new ScriptEngineLateEvaluateEvent(this);
+			scriptEngineLateEvaluateEvent.dispatchEvent(ev3);
+			EventBus.getInstance().dispatchEvent(ev3);
+		}
+
+		// Dispatch
+		ScriptLateEvaluateEvent ev3 = new ScriptLateEvaluateEvent(this, script);
+		scriptLateEvaluateEvent.dispatchEvent(ev3);
+		EventBus.getInstance().dispatchEvent(ev3);
+
+		// Late evaluate
+		for (LocalPolyscriptPlugin<?> plugin : script.getPlugins())
+			plugin.getPluginInstance().onLateEvaluate(this, script, script.getVariablesProcessor(),
+					script.getLocalPluginVariablesContext(), globalVarsPlugins);
 	}
 
 	private void postEvaluateScript(PolyScript script) {
-		// FIXME
+		// Dispatch
+		ScriptPostEvaluateEvent ev = new ScriptPostEvaluateEvent(this, script);
+		scriptPostEvaluateEvent.dispatchEvent(ev);
+		EventBus.getInstance().dispatchEvent(ev);
+
+		// Post evaluate
+		for (LocalPolyscriptPlugin<?> plugin : script.getPlugins())
+			plugin.getPluginInstance().onPostEvaluate(this, script, script.getVariablesProcessor(),
+					script.getLocalPluginVariablesContext(), globalVarsPlugins);
 	}
 
 	@Override

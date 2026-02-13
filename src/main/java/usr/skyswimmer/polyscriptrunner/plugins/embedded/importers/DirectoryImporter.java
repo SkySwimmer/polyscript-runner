@@ -69,12 +69,12 @@ public class DirectoryImporter implements IPolyscriptImporter {
         }
 
         // Recurse
-        for (File subdir : file.listFiles(t -> t.isDirectory()))
-            importInto(importRelative + "/" + subdir.getName(), targetVariableName, subdir, engine, script, processor,
-                    target, prefix + subdir.getName() + ".");
         for (File f : file.listFiles(t -> t.isFile()))
             importInto(importRelative + "/" + f.getName(), targetVariableName, f, engine, script, processor, target,
                     prefix);
+        for (File subdir : file.listFiles(t -> t.isDirectory()))
+            importInto(importRelative + "/" + subdir.getName(), targetVariableName, subdir, engine, script, processor,
+                    target, prefix + subdir.getName() + ".");
     }
 
 }

@@ -36,10 +36,16 @@ public class PolyScript {
 
 	private HashMap<String, IPolyscriptImporter> importers = new LinkedHashMap<String, IPolyscriptImporter>();
 	private HashMap<String, IPolyscriptImporter> importerPatterns = new LinkedHashMap<String, IPolyscriptImporter>();
-	
+
 	private HashMap<String, JsonVariablesContext> importedResources = new LinkedHashMap<String, JsonVariablesContext>();
 	private HashMap<String, String> importedRelative = new HashMap<String, String>();
 	private HashMap<String, String> importedTargerts = new HashMap<String, String>();
+
+	private UnsafeAccessor unsafe = new UnsafeAccessor();
+
+	public UnsafeAccessor unsafe() {
+		return unsafe;
+	}
 
 	public class UnsafeAccessor {
 
@@ -49,12 +55,6 @@ public class PolyScript {
 			importedResources.put(absoluteFile.getAbsolutePath(), ctx);
 		}
 
-	}
-
-	private UnsafeAccessor unsafe = new UnsafeAccessor();
-
-	public UnsafeAccessor unsafe() {
-		return unsafe;
 	}
 
 	/**
@@ -69,30 +69,33 @@ public class PolyScript {
 	/**
 	 * Retrieves the relative path of a imported resource
 	 * 
-	 * @param importedFile Imported context file instance to retrieve the relative path of
+	 * @param importedFile Imported context file instance to retrieve the relative
+	 *                     path of
 	 * @return Relative path of the imported resource or null if not found
 	 */
-	public String getImportedResourceRelativePath(File importedFile){
+	public String getImportedResourceRelativePath(File importedFile) {
 		return importedRelative.get(importedFile.getAbsolutePath());
 	}
 
 	/**
 	 * Retrieves the target variable name of a imported resource
 	 * 
-	 * @param importedFile Imported context file instance to retrieve the target variable name of
+	 * @param importedFile Imported context file instance to retrieve the target
+	 *                     variable name of
 	 * @return Target variable name of the imported resource or null if not found
 	 */
-	public String getImportedResourceTargetVar(File importedFile){
+	public String getImportedResourceTargetVar(File importedFile) {
 		return importedTargerts.get(importedFile.getAbsolutePath());
 	}
 
 	/**
 	 * Retrieves imported contexts by file
 	 * 
-	 * @param importedFile Imported context file instance to retrieve the JsonVariablesContext instance for
+	 * @param importedFile Imported context file instance to retrieve the
+	 *                     JsonVariablesContext instance for
 	 * @return JsonVariablesContext instance or null if not found
 	 */
-	public JsonVariablesContext getImportedResourceContext(File importedFile){
+	public JsonVariablesContext getImportedResourceContext(File importedFile) {
 		return importedResources.get(importedFile.getAbsolutePath());
 	}
 
@@ -184,6 +187,8 @@ public class PolyScript {
 		importers.clear();
 		importerPatterns.clear();
 	}
+
+	JsonVariablesContext localImports;
 
 	void initializeScript(JsonObject processed, JsonVariablesProcessor proc, JsonVariablesContext contextFile,
 			JsonVariablesContext contextLocal, JsonVariablesContext contextPluginsLocal,

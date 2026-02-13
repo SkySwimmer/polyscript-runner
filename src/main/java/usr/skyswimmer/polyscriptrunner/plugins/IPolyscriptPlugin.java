@@ -16,19 +16,33 @@ public interface IPolyscriptPlugin extends IEventReceiver {
 
 	public void init(PolyScriptEngine engine);
 
-	public default void setupScripts(PolyScriptEngine engine, PolyScript script) {
+	public default void setupScripts(PolyScriptEngine engine, PolyScript script, JsonVariablesProcessor processor,
+			JsonVariablesContext local, JsonVariablesContext global) {
 	}
 
 	public default void postInit(PolyScriptEngine engine) {
 	}
 
-	public default void populateContexts(PolyScriptEngine engine, PolyScript script, JsonVariablesProcessor processor, JsonVariablesContext local, JsonVariablesContext global) { 
+	public default void populateContexts(PolyScriptEngine engine, PolyScript script, JsonVariablesProcessor processor,
+			JsonVariablesContext local, JsonVariablesContext global) {
+	}
+
+	public default void onEarlyEvaluate(PolyScriptEngine engine, PolyScript script, JsonVariablesProcessor processor,
+			JsonVariablesContext local, JsonVariablesContext global) {
 	}
 
 	public default void onEvaluate(PolyScriptEngine engine, PolyScript script, JsonVariablesProcessor processor,
 			JsonVariablesContext local, JsonVariablesContext global) {
 	}
-	
+
+	public default void onLateEvaluate(PolyScriptEngine engine, PolyScript script, JsonVariablesProcessor processor,
+			JsonVariablesContext local, JsonVariablesContext global) {
+	}
+
+	public default void onPostEvaluate(PolyScriptEngine engine, PolyScript script, JsonVariablesProcessor processor,
+			JsonVariablesContext local, JsonVariablesContext global) {
+	}
+
 	public default IPolyscriptImporter[] provideImporters(PolyScriptEngine engine) {
 		return new IPolyscriptImporter[0];
 	}

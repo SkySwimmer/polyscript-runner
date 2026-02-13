@@ -1,7 +1,5 @@
 rootProject.name = 'polyscript-runner'
 include(":quicktools-utils")
 project(":quicktools-utils").projectDir = file("deps/quicktools-utils")
-include(":quicktools-utils:connective-http")
-project(":quicktools-utils:connective-http").projectDir = file("deps/quicktools-utils/deps/connective-http")
 include(":connective-http")
 project(":connective-http").projectDir = file("deps/connective-http")

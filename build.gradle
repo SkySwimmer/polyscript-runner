@@ -25,7 +25,7 @@ repositories {
 }
 
 jar {
-	baseName "${projectId}"
+	baseName "${projectName}"
 	manifest {
 		attributes([
 			"Specification-Title": "${projectName}",
@@ -47,13 +47,13 @@ task javaDocs(type: Javadoc) {
 
 task javadocJar(type: Jar, dependsOn: 'javaDocs') {
 	from javadoc
-	baseName "${projectId}"
+	baseName "${projectName}"
 	classifier = 'javadoc'
 	exclude "**/extra/**"
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-	baseName "${projectId}"
+	baseName "${projectName}"
 	classifier = 'sources'
 	from sourceSets.main.allSource
 	exclude "**/extra/**"
@@ -65,8 +65,8 @@ artifacts {
 }
 
 dependencies {
-	implementation project("quicktools-utils")
-	implementation project("connective-http")
+	implementation project(":quicktools-utils")
+	implementation project(":connective-http")
 
 	implementation group: 'org.asf.cyan', name: 'Fluid', version: '1.0.0.A33'
 

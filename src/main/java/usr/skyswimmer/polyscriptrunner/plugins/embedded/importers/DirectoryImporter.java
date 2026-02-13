@@ -42,13 +42,10 @@ public class DirectoryImporter implements IPolyscriptImporter {
                 PatternMatchResult result = matcher.match(file.getName());
                 if (result.isMatch()) {
                     // Found pattern match
-                    String key = targetVariableName;
-                    if (!key.isEmpty())
-                        key += ".";
                     String name = file.getName();
                     if (result.getParameters().length >= 1)
                         name = result.getParameters()[0];
-                    key += prefix + name;
+                    String key = prefix + name;
 
                     // Import
                     JsonVariablesContext ctx = new JsonVariablesContext(processor);

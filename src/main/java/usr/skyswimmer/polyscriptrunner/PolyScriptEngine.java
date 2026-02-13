@@ -357,9 +357,6 @@ public class PolyScriptEngine implements Closeable {
 		if (!scriptCanonical.startsWith(rootCanonical))
 			throw new IOException("Importing scripts not relative to the root settings file is unsupported");
 		String pathRelative = scriptCanonical.substring(rootCanonical.length() + 1);
-		String importRelative = "scripts." + pathRelative.replace("/", ".");
-		if (importRelative.endsWith(".json"))
-			importRelative = importRelative.substring(0, importRelative.length() - 5);
 		logger.info("Importing script " + pathRelative + "...");
 
 		// Prepare
@@ -542,7 +539,8 @@ public class PolyScriptEngine implements Closeable {
 					logger.warn("Resource import failed: " + importPathRelative + ": no matching importer");
 			}
 		}
-		inst.localImports = env.imports;
+		JsonVariablesProcessor procn = new JsonVariablesProcessor();
+		inst.localImports = env.imports.duplicate(procn);
 
 		// Assign main script if needed
 		if (script.getAbsolutePath().equals(mainScriptFile.getAbsolutePath()))
@@ -556,7 +554,7 @@ public class PolyScriptEngine implements Closeable {
 			processors.remove(proc);
 		}
 		proc.close();
-		proc = new JsonVariablesProcessor();
+		proc = procn;
 		synchronized (processors) {
 			processors.add(proc);
 		}
@@ -823,23 +821,24 @@ public class PolyScriptEngine implements Closeable {
 
 	private void setupScript(PolyScript script) throws IOException {
 		// Prepare script environment contexts
+		JsonVariablesProcessor procn = new JsonVariablesProcessor();
+		script.localImports = script.localImports.duplicate(procn);
 		if (script.getVariablesProcessor() != null) {
 			synchronized (processors) {
 				processors.remove(script.getVariablesProcessor());
 			}
 			script.getVariablesProcessor().close();
 		}
-		JsonVariablesProcessor proc = new JsonVariablesProcessor();
 		synchronized (processors) {
-			processors.add(proc);
+			processors.add(procn);
 		}
 
 		// Setup
 		ScriptEnv env = initializeScriptEnv(script, script.getScriptJson(), script.getRawScriptJson(),
-				script.getParentScript(), proc);
+				script.getParentScript(), procn);
 
 		// Update
-		script.initializeScript(script.getScriptJson(), proc, env.localFile, env.locals, env.localsPlugins,
+		script.initializeScript(script.getScriptJson(), procn, env.localFile, env.locals, env.localsPlugins,
 				env.globalsPlugins);
 	}
 

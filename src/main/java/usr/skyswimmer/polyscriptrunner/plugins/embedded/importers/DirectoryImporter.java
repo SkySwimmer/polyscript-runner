@@ -54,7 +54,7 @@ public class DirectoryImporter implements IPolyscriptImporter {
                         continue;
                     engine.getLogger().info("Importing file " + importRelative + " into " + key + "...");
                     script.unsafe().imported(importRelative, key, file.getAbsoluteFile(), ctx);
-                    target.importContext(key, target);
+                    target.importContext(key, ctx);
 
                     // Found
                     return;

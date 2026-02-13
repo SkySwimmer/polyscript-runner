@@ -3,9 +3,11 @@ package usr.skyswimmer.polyscriptrunner;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import com.google.gson.JsonObject;
 
+import usr.skyswimmer.polyscriptrunner.importers.IPolyscriptImporter;
 import usr.skyswimmer.polyscriptrunner.plugins.IPolyscriptPlugin;
 import usr.skyswimmer.quicktoolsutils.json.JsonVariablesContext;
 import usr.skyswimmer.quicktoolsutils.json.JsonVariablesProcessor;
@@ -32,6 +34,116 @@ public class PolyScript {
 	private JsonVariablesContext contextLocal;
 	private JsonVariablesContext contextPluginsLocal;
 
+	private HashMap<String, IPolyscriptImporter> importers = new LinkedHashMap<String, IPolyscriptImporter>();
+	private HashMap<String, IPolyscriptImporter> importerPatterns = new LinkedHashMap<String, IPolyscriptImporter>();
+	
+	private HashMap<String, JsonVariablesContext> importedResources = new LinkedHashMap<String, JsonVariablesContext>();
+	private HashMap<String, String> importedRelative = new HashMap<String, String>();
+	private HashMap<String, String> importedTargerts = new HashMap<String, String>();
+
+	public class UnsafeAccessor {
+
+		public void imported(String relativePath, String targetVar, File absoluteFile, JsonVariablesContext ctx) {
+			importedRelative.put(absoluteFile.getAbsolutePath(), relativePath);
+			importedTargerts.put(absoluteFile.getAbsolutePath(), targetVar);
+			importedResources.put(absoluteFile.getAbsolutePath(), ctx);
+		}
+
+	}
+
+	private UnsafeAccessor unsafe = new UnsafeAccessor();
+
+	public UnsafeAccessor unsafe() {
+		return unsafe;
+	}
+
+	/**
+	 * Retrieves all imported resource sources
+	 * 
+	 * @return Array of File instances
+	 */
+	public File[] getImportedResources() {
+		return importedResources.keySet().stream().map(t -> new File(t).getAbsoluteFile()).toArray(t -> new File[t]);
+	}
+
+	/**
+	 * Retrieves the relative path of a imported resource
+	 * 
+	 * @param importedFile Imported context file instance to retrieve the relative path of
+	 * @return Relative path of the imported resource or null if not found
+	 */
+	public String getImportedResourceRelativePath(File importedFile){
+		return importedRelative.get(importedFile.getAbsolutePath());
+	}
+
+	/**
+	 * Retrieves the target variable name of a imported resource
+	 * 
+	 * @param importedFile Imported context file instance to retrieve the target variable name of
+	 * @return Target variable name of the imported resource or null if not found
+	 */
+	public String getImportedResourceTargetVar(File importedFile){
+		return importedTargerts.get(importedFile.getAbsolutePath());
+	}
+
+	/**
+	 * Retrieves imported contexts by file
+	 * 
+	 * @param importedFile Imported context file instance to retrieve the JsonVariablesContext instance for
+	 * @return JsonVariablesContext instance or null if not found
+	 */
+	public JsonVariablesContext getImportedResourceContext(File importedFile){
+		return importedResources.get(importedFile.getAbsolutePath());
+	}
+
+	/**
+	 * Retrieves importers by pattern
+	 * 
+	 * @param pattern Pattern string
+	 * @return IPolyscriptImporter instance
+	 */
+	public IPolyscriptImporter getImporterByPattern(String pattern) {
+		return importerPatterns.get(pattern);
+	}
+
+	/**
+	 * Retrieves defined importer patterns
+	 * 
+	 * @return Array of importer pattern strings
+	 */
+	public String[] getImporterPatterns() {
+		return importerPatterns.keySet().toArray(t -> new String[t]);
+	}
+
+	/**
+	 * Checks if an importer is applied
+	 * 
+	 * @param name Importer name
+	 * @return True if applied, false otherwise
+	 */
+	public boolean isImporterAvailable(String name) {
+		return importers.containsKey(name);
+	}
+
+	/**
+	 * Retrieves all applied importers
+	 * 
+	 * @return Array of IPolyscriptImporter instances
+	 */
+	public IPolyscriptImporter[] getImporters() {
+		return importers.values().toArray(t -> new IPolyscriptImporter[t]);
+	}
+
+	/**
+	 * Retrieves importers by name
+	 * 
+	 * @param name Importer name
+	 * @return IPolyscriptImporter instance or null
+	 */
+	public IPolyscriptImporter getImporters(String name) {
+		return importers.get(name);
+	}
+
 	PolyScript(PolyScript parentScript, File source, String relativeSource, File workingDir, JsonObject rawObject,
 			JsonObject processedObject) {
 		this.parentScript = parentScript;
@@ -50,12 +162,27 @@ public class PolyScript {
 		scriptOverloads.add(script);
 	}
 
+	void addedImporters(IPolyscriptImporter importer, String pattern) {
+		if (!importers.containsKey(importer.name()))
+			importers.put(importer.name(), importer);
+		importerPatterns.put(pattern, importer);
+	}
+
 	void addedPlugin(LocalPolyscriptPlugin<?> plugin) {
 		scriptPlugins.put(plugin.getPluginInstance().name(), plugin);
 	}
 
 	void assignProcessor(JsonVariablesProcessor proc) {
 		this.variableProcessor = proc;
+	}
+
+	void clearPlugins() {
+		scriptPlugins.clear();
+	}
+
+	void clearImporters() {
+		importers.clear();
+		importerPatterns.clear();
 	}
 
 	void initializeScript(JsonObject processed, JsonVariablesProcessor proc, JsonVariablesContext contextFile,
@@ -135,7 +262,8 @@ public class PolyScript {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T extends IPolyscriptPlugin> LocalPolyscriptPlugin<T>[] getPlugins(Class<T> type) {
-		return scriptPlugins.values().stream().filter(t -> t.getPluginInstance().getClass().isAssignableFrom(type)).map(t -> (LocalPolyscriptPlugin<T>)t).toArray(t -> new LocalPolyscriptPlugin[t]);
+		return scriptPlugins.values().stream().filter(t -> t.getPluginInstance().getClass().isAssignableFrom(type))
+				.map(t -> (LocalPolyscriptPlugin<T>) t).toArray(t -> new LocalPolyscriptPlugin[t]);
 	}
 
 	/**
@@ -233,10 +361,4 @@ public class PolyScript {
 	public JsonObject getScriptJson() {
 		return scriptFileJson;
 	}
-
-	// FIXME: implement
-	// FIXME: have fields for plugins
-	// FIXME: have fields for child scripts
-	// FIXME: have fields for imported resources
-	// FIXME: have fields for accessing plugins
 }

@@ -18,15 +18,18 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
+import usr.skyswimmer.polyscriptrunner.importers.IPolyscriptImporter;
 import usr.skyswimmer.polyscriptrunner.plugins.IPluginInstanceProvider;
 import usr.skyswimmer.polyscriptrunner.plugins.IPolyscriptPlugin;
-
+import usr.skyswimmer.polyscriptrunner.plugins.embedded.importers.ScriptImporter;
 import usr.skyswimmer.quicktoolsutils.connective.logger.Log4jManagerImpl;
 
 import usr.skyswimmer.quicktoolsutils.json.JsonUtils;
 import usr.skyswimmer.quicktoolsutils.json.JsonVariablesContext;
 import usr.skyswimmer.quicktoolsutils.json.JsonVariablesProcessor;
 import usr.skyswimmer.quicktoolsutils.json.variables.WrappedJsonElement;
+import usr.skyswimmer.quicktoolsutils.patterns.PatternMatchResult;
+import usr.skyswimmer.quicktoolsutils.patterns.WildcardPatternMatcher;
 
 public class PolyScriptEngine implements Closeable {
 
@@ -62,6 +65,8 @@ public class PolyScriptEngine implements Closeable {
 
 	private ArrayList<JsonVariablesProcessor> processors = new ArrayList<JsonVariablesProcessor>();
 
+	private HashMap<String, IPolyscriptImporter> importers = new HashMap<String, IPolyscriptImporter>();
+
 	private Logger logger;
 
 	// FIXME: events
@@ -71,6 +76,9 @@ public class PolyScriptEngine implements Closeable {
 		this.mainScriptFile = mainScriptFile;
 		this.pluginProvider = pluginProvider;
 		logger = LogManager.getLogger("polyscript-engine");
+
+		// Setup importers
+		importers.put("import", new ScriptImporter());
 	}
 
 	/**
@@ -80,6 +88,44 @@ public class PolyScriptEngine implements Closeable {
 	 */
 	public Logger getLogger() {
 		return logger;
+	}
+
+	/**
+	 * Checks if an importer is applied
+	 * 
+	 * @param name Importer name
+	 * @return True if applied, false otherwise
+	 */
+	public boolean isImporterAvailable(String name) {
+		if (!setup)
+			throw new IllegalStateException(
+					"Script engine not fully initialized, please call setupScripts() prior to evaluation");
+		return importers.containsKey(name);
+	}
+
+	/**
+	 * Retrieves all applied importers
+	 * 
+	 * @return Array of IPolyscriptImporter instances
+	 */
+	public IPolyscriptImporter[] getImporters() {
+		if (!setup)
+			throw new IllegalStateException(
+					"Script engine not fully initialized, please call setupScripts() prior to evaluation");
+		return importers.values().toArray(t -> new IPolyscriptImporter[t]);
+	}
+
+	/**
+	 * Retrieves importers by name
+	 * 
+	 * @param name Importer name
+	 * @return IPolyscriptImporter instance or null
+	 */
+	public IPolyscriptImporter getImporters(String name) {
+		if (!setup)
+			throw new IllegalStateException(
+					"Script engine not fully initialized, please call setupScripts() prior to evaluation");
+		return importers.get(name);
 	}
 
 	/**
@@ -175,7 +221,26 @@ public class PolyScriptEngine implements Closeable {
 		// Load
 		if (mainScript == null && !script.getAbsolutePath().equals(mainScriptFile.getAbsolutePath()))
 			throw new IllegalStateException("Main script not loaded");
-		PolyScript scr = importScript(mainScript, script);
+		PolyScript scr = importScriptBare(mainScript, script);
+		scripts.put(script.getAbsolutePath(), scr);
+		return scr;
+	}
+
+	/**
+	 * Imports scripts files
+	 * 
+	 * @param script Script file
+	 * @throws IOException If the script cannot be loaded
+	 */
+	public PolyScript importScript(PolyScript parent, File script) throws IOException {
+		// Check file
+		if (!script.exists() || !script.isFile())
+			throw new FileNotFoundException(script.getPath());
+		if (scripts.containsKey(script.getAbsolutePath()))
+			return scripts.get(script.getAbsolutePath()); // Already imported
+
+		// Load
+		PolyScript scr = importScriptBare(parent, script);
 		scripts.put(script.getAbsolutePath(), scr);
 		return scr;
 	}
@@ -190,7 +255,7 @@ public class PolyScriptEngine implements Closeable {
 	 * @return PolyScript instance
 	 * @throws IOException If importing fails
 	 */
-	public PolyScript importScript(PolyScript parent, File script) throws IOException {
+	public PolyScript importScriptBare(PolyScript parent, File script) throws IOException {
 		// Log
 		File scriptRoot = mainScriptFile.getAbsoluteFile().getParentFile();
 		String scriptCanonical = script.getCanonicalPath();
@@ -242,12 +307,43 @@ public class PolyScriptEngine implements Closeable {
 			parent.addedChild(inst);
 		inst.initializeScript(scriptProcessed, proc, env.localFile, env.locals, env.localsPlugins, env.globalsPlugins);
 
-		// Import script imports and import types into variables
-		// FIXME: only load scripts relative to the settings json
-		// FIXME: make sure to properly assign imported PolyScript scripts to the
-		// context variables, imported PolyScripts must have their Context instance
-		// assigned, not the toplevel script object
-		// FIXME: implement
+		// Apply plugins
+		boolean pluginError = false;
+		if (scriptProcessed.has("plugins")) {
+			JsonArray plugins = JsonUtils.getArrayOrError("polyscript", scriptProcessed, "plugins");
+			for (JsonElement pluginE : plugins) {
+				// Get plugin name
+				String pluginName = JsonUtils.getStringOrError("plugins", pluginE);
+
+				// Find plugin
+				logger.info("Applying plugin: " + pluginName + "...");
+				IPolyscriptPlugin plugin = this.plugins.get(pluginName);
+				if (plugin == null) {
+					// Apply
+					plugin = pluginProvider.provide(pluginName);
+					if (plugin == null) {
+						// Error
+						pluginError = true;
+						logger.error("Unrecognized plugin: " + pluginName + ": plugin may not be loaded");
+						continue;
+					}
+
+					// Load
+					this.plugins.put(pluginName, plugin);
+					plugin.preInit(this);
+
+					// Load importers
+					for (IPolyscriptImporter importer : plugin.provideImporters(this))
+						this.importers.put(importer.name(), importer);
+				}
+
+				// Apply plugin
+				inst.addedPlugin(new LocalPolyscriptPlugin<IPolyscriptPlugin>(plugin, proc, env.globalsPlugins, proc,
+						env.localsPlugins, inst));
+			}
+		}
+		if (pluginError)
+			throw new IOException("Plugins failed to load");
 
 		// Resolve script overloads into current
 		if (scriptProcessed.has("import-overloads")) {
@@ -259,7 +355,7 @@ public class PolyScriptEngine implements Closeable {
 				File scriptFile = new File(overload);
 				if (!scriptFile.isAbsolute())
 					scriptFile = new File(scriptWorkingDir, scriptFile.getPath());
-				PolyScript overloadScript = importScript(inst, scriptFile);
+				PolyScript overloadScript = importScriptBare(inst, scriptFile);
 
 				// Add values
 				JsonObject obj = overloadScript.getScriptJson();
@@ -270,12 +366,75 @@ public class PolyScriptEngine implements Closeable {
 			}
 		}
 
-		// Re-import script imports and import types into variables now that overloads
-		// are loaded
-		// FIXME: implement
+		// Import script imports and import types into variables
+		boolean importerError = false;
+		if (scriptProcessed.has("importers")) {
+			// Script importer types are first
+			JsonObject importers = JsonUtils.getObjectOrError("polyscript", scriptProcessed, "importers");
+			for (String pattern : importers.keySet()) {
+				// Get importer
+				String importerName = JsonUtils.getStringOrError("importers", importers, pattern);
+				logger.info("Applying importer: " + importerName + " for pattern " + pattern + "...");
+				IPolyscriptImporter importer = this.importers.get(importerName);
+				if (importer == null) {
+					// Error
+					pluginError = true;
+					logger.error("Unrecognized importer: " + importerName + ": a needed plugin may not be loaded");
+					continue;
+				}
 
-		// Apply plugins
-		// FIXME
+				// Load importer
+				inst.addedImporters(importer, pattern);
+			}
+		}
+		if (importerError)
+			throw new IOException("Importers failed to load");
+
+		// Import resources
+		if (scriptProcessed.has("import")) {
+			JsonObject imports = JsonUtils.getObjectOrError("polyscript", scriptProcessed, "import");
+			for (String ctxVar : imports.keySet()) {
+				// Get importer
+				String importPath = JsonUtils.getStringOrError("import", imports, ctxVar);
+				File importFile = new File(importPath);
+				if (!importFile.isAbsolute())
+					importFile = new File(scriptWorkingDir, importFile.getPath());
+				if (!importFile.exists())
+					throw new IOException("Imported resource not found: " + importPath);
+				String importCanonical = importFile.getCanonicalPath();
+				if (!importCanonical.startsWith(rootCanonical))
+					throw new IOException("Importing resources not relative to the root settings file is unsupported: "
+							+ importPath + ": file outside of script");
+				String importPathRelative = importCanonical.substring(rootCanonical.length() + 1);
+				logger.info("Importing file " + importPathRelative + " into " + ctxVar + "...");
+
+				// Find importer
+				boolean found = false;
+				for (String pattern : inst.getImporterPatterns()) {
+					WildcardPatternMatcher matcher = new WildcardPatternMatcher(pattern);
+					PatternMatchResult result = matcher.match(importFile.getName());
+					if (result.isMatch()) {
+						// Found pattern match
+						IPolyscriptImporter importer = inst.getImporterByPattern(pattern);
+						if (importFile.isDirectory() && !importer.supportDirectories())
+							continue;
+
+						// Import
+						JsonVariablesContext ctx = new JsonVariablesContext(proc);
+						if (!importer.importFile(importPathRelative, ctxVar, importFile, this, inst, proc, ctx))
+							continue;
+						inst.unsafe().imported(importPathRelative, ctxVar, importFile.getAbsoluteFile(), ctx);
+						env.locals.importContext(ctxVar, ctx);
+
+						// Found it
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+					logger.warn("Resource import failed: " + importPathRelative + ": no matching importer");
+			}
+		}
 
 		// Assign main script if needed
 		if (script.getAbsolutePath().equals(mainScriptFile.getAbsolutePath()))
@@ -324,14 +483,29 @@ public class PolyScriptEngine implements Closeable {
 			throw new IllegalStateException("The method setupScripts() can only be called once");
 		setup = true;
 
+		// Initialize plugins
+		logger.info("Initializing plugins...");
+		for (IPolyscriptPlugin plugin : plugins.values()) {
+			logger.info("Initializing plugin: " + plugin.name());
+			plugin.init(this);
+		}
+
 		// Initialize
 		logger.info("Initializing scripts...");
 		for (PolyScript script : getAllScripts()) {
 			setupScript(script);
+			for (IPolyscriptPlugin plugin : plugins.values()) {
+				logger.info("Initializing plugin: " + plugin.name() + " on script " + script.getRelativeSourcePath());
+				plugin.setupScripts(this, script);
+			}
 		}
 
-		// Initialize plugins
-		// FIXME: initialize plugins
+		// Post-initialize plugins
+		logger.info("Post-initializing plugins...");
+		for (IPolyscriptPlugin plugin : plugins.values()) {
+			logger.info("Post-initializing plugin: " + plugin.name());
+			plugin.postInit(this);
+		}
 	}
 
 	private class ScriptEnv {
@@ -430,7 +604,15 @@ public class PolyScriptEngine implements Closeable {
 			}
 		}
 		localContext.assignVariable("plugins", pluginsLocalApplied);
-		// FIXME: local imports
+		JsonVariablesContext importsContext = new JsonVariablesContext(proc);
+		if (localScript != null) {
+			for (File importedFile : localScript.getImportedResources()) {
+				String var = localScript.getImportedResourceTargetVar(importedFile);
+				JsonVariablesContext ctx = localScript.getImportedResourceContext(importedFile);
+				importsContext.importContext(var, ctx);
+			}
+		}
+		localContext.importContext("imports", importsContext);
 		localContext.assignVariable("script", scriptProcessed, true);
 		localContext.assignVariable("scriptfullraw", WrappedJsonElement.unwrap(scriptProcessed), false);
 		localContext.assignVariable("scriptraw", scriptRaw, false);
@@ -445,7 +627,6 @@ public class PolyScriptEngine implements Closeable {
 			globalContext.assignVariable("plugins." + plugin.name() + ".applied", new JsonPrimitive(true));
 		}
 		globalContext.assignVariable("plugins", pluginsGlobalApplied);
-		// FIXME: all imports
 		globalContext.importContext("context", env.globals);
 		globalContext.importContext("plugincontext", env.globalsPlugins);
 
@@ -466,8 +647,26 @@ public class PolyScriptEngine implements Closeable {
 		rootContext.importContext("context", contextInfo);
 
 		// Script files
-		// rootContext.importObject("settings", mainScript.getRawScriptJson()); // FIXME
-		// FIXME: other scripts
+		JsonVariablesContext ctxFiles = new JsonVariablesContext(proc);
+		if (mainScript != null)
+			ctxFiles.importObject("settings", mainScript.getScriptJson());
+		for (PolyScript script : scripts.values().toArray(t -> new PolyScript[t])) {
+			String path = script.getRelativeSourcePath();
+			String keyPath = path.replace("\\", "/").replace(".settings.json", "").replace(".json", "").replace("/",
+					".");
+			ctxFiles.importObject(keyPath, script.getScriptJson());
+		}
+		rootContext.importContext(ctxFiles);
+		JsonVariablesContext ctxFilesRaw = new JsonVariablesContext(proc);
+		if (mainScript != null)
+			ctxFilesRaw.importObject("settings", mainScript.getRawScriptJson(), false);
+		for (PolyScript script : scripts.values().toArray(t -> new PolyScript[t])) {
+			String path = script.getRelativeSourcePath();
+			String keyPath = path.replace("\\", "/").replace(".settings.json", "").replace(".json", "").replace("/",
+					".");
+			ctxFilesRaw.importObject(keyPath, script.getRawScriptJson(), false);
+		}
+		rootContext.importContext("rawscripts", ctxFilesRaw);
 
 		// Return
 		return env;

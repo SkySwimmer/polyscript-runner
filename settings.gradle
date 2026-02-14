@@ -8,3 +8,6 @@ project(":connective-http").projectDir = file("deps/connective-http")
 
 include(":plugin-shellscript")
 project(":plugin-shellscript").projectDir = file("plugins/plugin-shellscript")
+
+include(":plugin-git")
+project(":plugin-git").projectDir = file("plugins/plugin-git")

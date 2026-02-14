@@ -3,6 +3,3 @@ group=usr.skyswimmer
 id=polyscript-runner
 name="polyscript-runner"
 version=a1.0
-
-# Sub-projects
-# None right now

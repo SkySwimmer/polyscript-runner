@@ -397,7 +397,8 @@ public class PolyScriptEngine implements Closeable {
 		inst.localImports = env.imports;
 		if (parent != null)
 			parent.addedChild(inst);
-		inst.initializeScript(scriptProcessed, proc, env.localFile, env.locals, env.localsPlugins, env.globalsPlugins);
+		inst.initializeScript(proc.wrapElement(WrappedJsonElement.unwrap(scriptProcessed)).getAsJsonObject(), proc,
+				env.localFile, env.locals, env.localsPlugins, env.globalsPlugins);
 
 		// Apply plugins
 		boolean pluginError = false;
@@ -546,9 +547,6 @@ public class PolyScriptEngine implements Closeable {
 		if (script.getAbsolutePath().equals(mainScriptFile.getAbsolutePath()))
 			mainScript = inst;
 
-		// Process script
-		scriptProcessed = proc.wrapElement(scriptProcessed).getAsJsonObject();
-
 		// Reinitialize fully
 		synchronized (processors) {
 			processors.remove(proc);
@@ -560,11 +558,15 @@ public class PolyScriptEngine implements Closeable {
 		}
 		inst.assignProcessor(proc);
 
+		// Process script
+		scriptProcessed = proc.wrapElement(scriptProcessed).getAsJsonObject();
+
 		// Setup
-		env = initializeScriptEnv(inst, inst.getScriptJson(), inst.getRawScriptJson(), inst.getParentScript(), proc);
+		env = initializeScriptEnv(inst, scriptProcessed, inst.getRawScriptJson(), inst.getParentScript(), proc);
 
 		// Update
-		inst.initializeScript(inst.getScriptJson(), proc, env.localFile, env.locals, env.localsPlugins,
+		inst.initializeScript(proc.wrapElement(WrappedJsonElement.unwrap(scriptProcessed)).getAsJsonObject(), proc,
+				env.localFile, env.locals, env.localsPlugins,
 				env.globalsPlugins);
 
 		// Send event
@@ -717,7 +719,7 @@ public class PolyScriptEngine implements Closeable {
 		// Populate from plugins
 		if (localScript != null) {
 			for (LocalPolyscriptPlugin<?> plugin : localScript.getPlugins()) {
-				plugin.getPluginInstance().populateContexts(this, parentScript, proc, env.localsPlugins,
+				plugin.getPluginInstance().populateContexts(this, localScript, proc, env.localsPlugins,
 						env.globalsPlugins);
 			}
 		}
@@ -833,12 +835,16 @@ public class PolyScriptEngine implements Closeable {
 			processors.add(procn);
 		}
 
+		// Process
+		JsonObject scriptProcessed = procn.wrapElement(script.getScriptJson()).getAsJsonObject();
+
 		// Setup
-		ScriptEnv env = initializeScriptEnv(script, script.getScriptJson(), script.getRawScriptJson(),
+		ScriptEnv env = initializeScriptEnv(script, scriptProcessed, script.getRawScriptJson(),
 				script.getParentScript(), procn);
 
 		// Update
-		script.initializeScript(script.getScriptJson(), procn, env.localFile, env.locals, env.localsPlugins,
+		script.initializeScript(procn.wrapElement(WrappedJsonElement.unwrap(scriptProcessed)).getAsJsonObject(), procn,
+				env.localFile, env.locals, env.localsPlugins,
 				env.globalsPlugins);
 	}
 

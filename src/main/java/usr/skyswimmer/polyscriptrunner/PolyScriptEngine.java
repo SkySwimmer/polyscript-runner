@@ -735,10 +735,13 @@ public class PolyScriptEngine implements Closeable {
 		importsCtx.importContext(env.locals);
 		importsCtx.importContext(env.imports);
 		localContext.importContext("imports", importsContext);
+		localContext.importObject("script", scriptProcessed, true);
 		localContext.assignVariable("script", scriptProcessed, true);
+		localContext.importObject("scriptfullraw", WrappedJsonElement.unwrap(scriptProcessed).getAsJsonObject(), false);
 		localContext.assignVariable("scriptfullraw", WrappedJsonElement.unwrap(scriptProcessed), false);
+		localContext.importObject("scriptraw", scriptRaw, false);
 		localContext.assignVariable("scriptraw", scriptRaw, false);
-		localContext.importContext("context", importsCtx);
+		localContext.importContext("localcontext", importsCtx);
 		localContext.importContext("plugincontext", env.localsPlugins);
 
 		// Create global context object
@@ -749,7 +752,7 @@ public class PolyScriptEngine implements Closeable {
 			globalContext.assignVariable("plugins." + plugin.name() + ".applied", new JsonPrimitive(true));
 		}
 		globalContext.assignVariable("plugins", pluginsGlobalApplied);
-		globalContext.importContext("context", env.globals);
+		globalContext.importContext("globalcontext", env.globals);
 		globalContext.importContext("plugincontext", env.globalsPlugins);
 
 		// Create "context" object with all contexts

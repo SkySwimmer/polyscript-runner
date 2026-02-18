@@ -781,7 +781,8 @@ public class PolyScriptEngine implements Closeable {
 			String path = script.getRelativeSourcePath();
 			String keyPath = path.replace("\\", "/").replace(".settings.json", "").replace(".json", "").replace("/",
 					".");
-			ctxFiles.importObject(keyPath, script.getScriptJson());
+			if (!ctxFiles.hasVariable(keyPath) && !rootContext.hasVariable(keyPath))
+				ctxFiles.importObject(keyPath, script.getScriptJson());
 		}
 		rootContext.importContext(ctxFiles);
 		JsonVariablesContext ctxFilesRaw = new JsonVariablesContext(proc);
@@ -791,7 +792,8 @@ public class PolyScriptEngine implements Closeable {
 			String path = script.getRelativeSourcePath();
 			String keyPath = path.replace("\\", "/").replace(".settings.json", "").replace(".json", "").replace("/",
 					".");
-			ctxFilesRaw.importObject(keyPath, script.getRawScriptJson(), false);
+			if (!ctxFilesRaw.hasVariable(keyPath))
+				ctxFilesRaw.importObject(keyPath, script.getRawScriptJson(), false);
 		}
 		rootContext.importContext("rawscripts", ctxFilesRaw);
 

@@ -658,7 +658,7 @@ public class PolyScriptEngine implements Closeable {
 			env.globals = new JsonVariablesContext(proc);
 			env.globalsPlugins = new JsonVariablesContext(proc);
 			env.globals.importContext(globalVars);
-			env.globalsPlugins.importContext(globalVars);
+			env.globalsPlugins.importContext(globalVarsPlugins);
 		}
 
 		// Import

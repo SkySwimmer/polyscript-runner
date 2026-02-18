@@ -655,8 +655,10 @@ public class PolyScriptEngine implements Closeable {
 			env.globals.retain();
 			env.globalsPlugins.retain();
 		} else {
-			env.globals = globalVars.duplicate(proc);
-			env.globalsPlugins = globalVarsPlugins.duplicate(proc);
+			env.globals = new JsonVariablesContext(proc);
+			env.globalsPlugins = new JsonVariablesContext(proc);
+			env.globals.importContext(globalVars);
+			env.globalsPlugins.importContext(globalVarsPlugins);
 		}
 
 		// Import

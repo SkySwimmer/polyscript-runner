@@ -39,7 +39,7 @@ public class GitPlugin implements IPolyscriptPlugin {
             // Open repository
             Git client;
             try {
-                client = Git.open(new File(script.getWorkingDirectory(), "deps/connective-http"));
+                client = Git.open(script.getWorkingDirectory());
             } catch (Exception e) {
                 engine.getLogger().error("Git plugin failed to load: failed to load repository", e);
                 return;

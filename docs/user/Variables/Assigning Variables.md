@@ -70,4 +70,4 @@ You can read about using imports in the [Documentation for Imports](Imports) pag
 ## Plugins
 Plugins can be used to provide programmatically-assigned variables that are either local or global, plugins *do* have the ability to assign global variables.
 
-You can read about using plugins in the [Documentation for Plugins](../PolyScript/Plugins) page.
+You can read about using plugins in the [Documentation for Plugins](../PolyScript/Plugins.md) page.

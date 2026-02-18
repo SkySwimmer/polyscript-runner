@@ -12,7 +12,6 @@ With PolyScript, the structure revolves primarily around:
  - Target Tool - The target tool refers to the project using the PolyScript environment for configuration, eg. `polyscript-jsonemitter` is a tool used to emit variable-processed json files based on json input
  - [Root Script](PolyScript) - The root settings file used by the Target Tool as the base configuration file, controls main settings for the environment, loads additional imports, and configures eg. jobs for the Target Tool
  - [PolyScript Files](PolyScript) - PolyScript files, typically `.settings.json` files, are the core of the PolyScript system, they provide script logic and variables to assign, they are the main build configuration settings
- - [PolyScript Plugins](PolyScript/Plugins) - Plugins are extensions that can be added to the PolyScript engine to provide additional logic, variables and importers, that can extend the build environment
+ - [PolyScript Plugins](PolyScript/Plugins.md) - Plugins are extensions that can be added to the PolyScript engine to provide additional logic, variables and importers, that can extend the build environment
  - [Variables](Variables) - Variables are as the name implies fields with variable values that can be used across scripts and imported resources
  - [Imports](Variables/Imports) - Imported resources provide additional variables that can be used for additional values and to configure settings furhter
- 

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,7 +38,6 @@ import usr.skyswimmer.polyscriptrunner.importers.IPolyscriptImporter;
 import usr.skyswimmer.polyscriptrunner.plugins.IPluginInstanceProvider;
 import usr.skyswimmer.polyscriptrunner.plugins.IPolyscriptPlugin;
 import usr.skyswimmer.polyscriptrunner.plugins.embedded.importers.ScriptImporter;
-import usr.skyswimmer.quicktoolsutils.connective.logger.Log4jManagerImpl;
 import usr.skyswimmer.quicktoolsutils.events.Event;
 import usr.skyswimmer.quicktoolsutils.events.EventBus;
 import usr.skyswimmer.quicktoolsutils.json.JsonUtils;
@@ -48,24 +48,6 @@ import usr.skyswimmer.quicktoolsutils.patterns.PatternMatchResult;
 import usr.skyswimmer.quicktoolsutils.patterns.WildcardPatternMatcher;
 
 public class PolyScriptEngine implements Closeable {
-
-	private static boolean debugMode;
-	static {
-		// Setup logging
-		if (System.getProperty("debugMode") != null) {
-			System.setProperty("log4j2.configurationFile",
-					PolyScriptEngine.class.getResource("/log4j2-ide.xml").toString());
-			debugMode = true;
-		} else {
-			System.setProperty("log4j2.configurationFile",
-					PolyScriptEngine.class.getResource("/log4j2.xml").toString());
-		}
-		new Log4jManagerImpl().assignAsMain();
-	}
-
-	public static boolean isDebugModeEnabled() {
-		return debugMode;
-	}
 
 	private File mainScriptFile;
 
@@ -85,11 +67,13 @@ public class PolyScriptEngine implements Closeable {
 	private HashMap<String, IPolyscriptImporter> importers = new HashMap<String, IPolyscriptImporter>();
 
 	private Logger logger;
+	private Level level;
 
-	public PolyScriptEngine(File mainScriptFile, IPluginInstanceProvider pluginProvider) {
+	public PolyScriptEngine(File mainScriptFile, IPluginInstanceProvider pluginProvider, Level logLevel) {
 		this.mainScriptFile = mainScriptFile;
 		this.pluginProvider = pluginProvider;
 		logger = LogManager.getLogger("polyscript-engine");
+		level = logLevel;
 
 		// Setup importers
 		importers.put("import", new ScriptImporter());
@@ -293,7 +277,7 @@ public class PolyScriptEngine implements Closeable {
 		// Check imported
 		if (!mainScriptImported) {
 			// Import main script
-			logger.info("Importing main script...");
+			logger.log(level, "Importing main script...");
 			mainScriptImported = true;
 			importScript(mainScriptFile);
 		}
@@ -357,7 +341,7 @@ public class PolyScriptEngine implements Closeable {
 		if (!scriptCanonical.startsWith(rootCanonical))
 			throw new IOException("Importing scripts not relative to the root settings file is unsupported");
 		String pathRelative = scriptCanonical.substring(rootCanonical.length() + 1);
-		logger.info("Importing script " + pathRelative + "...");
+		logger.log(level, "Importing script " + pathRelative + "...");
 
 		// Prepare
 		File scriptDir = script.getAbsoluteFile().getParentFile();
@@ -409,7 +393,7 @@ public class PolyScriptEngine implements Closeable {
 				String pluginName = JsonUtils.getStringOrError("plugins", pluginE);
 
 				// Find plugin
-				logger.info("Applying plugin: " + pluginName + "...");
+				logger.log(level, "Applying plugin: " + pluginName + "...");
 				IPolyscriptPlugin plugin = this.plugins.get(pluginName);
 				if (plugin == null) {
 					// Apply
@@ -479,7 +463,7 @@ public class PolyScriptEngine implements Closeable {
 			for (String pattern : importers.keySet()) {
 				// Get importer
 				String importerName = JsonUtils.getStringOrError("importers", importers, pattern);
-				logger.info("Applying importer: " + importerName + " for pattern " + pattern + "...");
+				logger.log(level, "Applying importer: " + importerName + " for pattern " + pattern + "...");
 				IPolyscriptImporter importer = this.importers.get(importerName);
 				if (importer == null) {
 					// Error
@@ -511,7 +495,7 @@ public class PolyScriptEngine implements Closeable {
 					throw new IOException("Importing resources not relative to the root settings file is unsupported: "
 							+ importPath + ": file outside of script");
 				String importPathRelative = importCanonical.substring(rootCanonical.length() + 1);
-				logger.info("Importing file " + importPathRelative + " into " + ctxVar + "...");
+				logger.log(level, "Importing file " + importPathRelative + " into " + ctxVar + "...");
 
 				// Find importer
 				boolean found = false;
@@ -526,8 +510,10 @@ public class PolyScriptEngine implements Closeable {
 
 						// Import
 						JsonVariablesContext ctx = new JsonVariablesContext(proc);
-						if (!importer.importFile(importPathRelative, ctxVar, importFile, this, inst, proc, ctx))
+						if (!importer.importFile(importPathRelative, ctxVar, importFile, this, inst, proc, ctx)) {
+							ctx.close();
 							continue;
+						}
 						inst.unsafe().imported(importPathRelative, ctxVar, importFile.getAbsoluteFile(), ctx);
 						env.imports.importContext(ctxVar, ctx);
 
@@ -598,9 +584,9 @@ public class PolyScriptEngine implements Closeable {
 		setup = true;
 
 		// Initialize plugins
-		logger.info("Initializing plugins...");
+		logger.log(level, "Initializing plugins...");
 		for (IPolyscriptPlugin plugin : plugins.values()) {
-			logger.info("Initializing plugin: " + plugin.name());
+			logger.log(level, "Initializing plugin: " + plugin.name());
 			plugin.init(this);
 
 			// Dispatch
@@ -615,7 +601,7 @@ public class PolyScriptEngine implements Closeable {
 		EventBus.getInstance().dispatchEvent(ev);
 
 		// Initialize
-		logger.info("Initializing scripts...");
+		logger.log(level, "Initializing scripts...");
 		for (PolyScript script : getAllScripts()) {
 			setupScript(script);
 		}
@@ -624,9 +610,9 @@ public class PolyScriptEngine implements Closeable {
 		}
 
 		// Post-initialize plugins
-		logger.info("Post-initializing plugins...");
+		logger.log(level, "Post-initializing plugins...");
 		for (IPolyscriptPlugin plugin : plugins.values()) {
-			logger.info("Post-initializing plugin: " + plugin.name());
+			logger.log(level, "Post-initializing plugin: " + plugin.name());
 			plugin.postInit(this);
 		}
 	}
@@ -656,6 +642,7 @@ public class PolyScriptEngine implements Closeable {
 			env.imports = new JsonVariablesContext(proc);
 		else {
 			env.imports = localScript.localImports.duplicate(proc);
+			localScript.localImports.close();
 			localScript.localImports = env.imports;
 		}
 		env.localsPlugins = new JsonVariablesContext(proc);
@@ -666,6 +653,7 @@ public class PolyScriptEngine implements Closeable {
 			globalVars = env.globals;
 			globalVarsPlugins = env.globalsPlugins;
 			env.globals.retain();
+			env.globalsPlugins.retain();
 		} else {
 			env.globals = globalVars.duplicate(proc);
 			env.globalsPlugins = globalVarsPlugins.duplicate(proc);
@@ -743,12 +731,14 @@ public class PolyScriptEngine implements Closeable {
 				importsContext.importContext(var, ctx);
 			}
 		}
+		JsonVariablesContext importsCtx = new JsonVariablesContext(proc);
+		importsCtx.importContext(env.locals);
+		importsCtx.importContext(env.imports);
 		localContext.importContext("imports", importsContext);
 		localContext.assignVariable("script", scriptProcessed, true);
 		localContext.assignVariable("scriptfullraw", WrappedJsonElement.unwrap(scriptProcessed), false);
 		localContext.assignVariable("scriptraw", scriptRaw, false);
-		localContext.importContext("context", env.imports);
-		localContext.importContext("context", env.locals);
+		localContext.importContext("context", importsCtx);
 		localContext.importContext("plugincontext", env.localsPlugins);
 
 		// Create global context object
@@ -850,7 +840,7 @@ public class PolyScriptEngine implements Closeable {
 
 	private void postSetupScript(PolyScript script) {
 		// Initialize script runner
-		logger.info("Initializing script " + script.getRelativeSourcePath() + "...");
+		logger.log(level, "Initializing script " + script.getRelativeSourcePath() + "...");
 
 		// Variable processor
 		JsonVariablesProcessor proc = script.getVariablesProcessor();
@@ -874,7 +864,7 @@ public class PolyScriptEngine implements Closeable {
 
 		// Init plugins
 		for (IPolyscriptPlugin plugin : plugins.values()) {
-			logger.info("Initializing plugin: " + plugin.name() + " on script " + script.getRelativeSourcePath());
+			logger.log(level, "Initializing plugin: " + plugin.name() + " on script " + script.getRelativeSourcePath());
 			plugin.setupScripts(this, script, script.getVariablesProcessor(),
 					script.getLocalPluginVariablesContext(), globalVarsPlugins);
 
@@ -1036,9 +1026,20 @@ public class PolyScriptEngine implements Closeable {
 	@Override
 	public void close() throws IOException {
 		synchronized (processors) {
-			for (JsonVariablesProcessor proc : processors)
+			JsonVariablesProcessor[] procs = processors.toArray(t -> new JsonVariablesProcessor[t]);
+			for (JsonVariablesProcessor proc : procs) {
 				proc.close();
+				processors.remove(proc);
+			}
 		}
+		if (globalVars != null)
+			globalVars.wipeRetain();
+		if (globalVarsPlugins != null)
+			globalVarsPlugins.wipeRetain();
+		if (globalVars != null)
+			globalVars.close();
+		if (globalVarsPlugins != null)
+			globalVarsPlugins.close();
 	}
 
 }

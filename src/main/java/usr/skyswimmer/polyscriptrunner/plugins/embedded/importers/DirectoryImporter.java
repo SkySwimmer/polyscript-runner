@@ -50,8 +50,10 @@ public class DirectoryImporter implements IPolyscriptImporter {
                     // Import
                     JsonVariablesContext ctx = new JsonVariablesContext(processor);
                     if (!script.getImporterByPattern(pattern).importFile(importRelative, key, file, engine, script,
-                            processor, ctx))
+                            processor, ctx)) {
+                        ctx.close();
                         continue;
+                    }
                     engine.getLogger().info("Importing file " + importRelative + " into " + key + "...");
                     script.unsafe().imported(importRelative, key, file.getAbsoluteFile(), ctx);
                     target.importContext(key, ctx);

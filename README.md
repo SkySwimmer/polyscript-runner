@@ -34,8 +34,8 @@ To build the library, use polytool build.
 
 After building, you can find the library under `build/libs`.
 
-## Plugins
-There are two pre-included plugins in the [plugins](plugins) folder of the repository, these are automatically built when running `./polytool build`.
+## Repository-provided Plugins
+There are two optional plugins in this repository in the [plugins](plugins) folder of the repository, these are automatically built when running `./polytool build`.
 
 The git plugin emits its assemblies into `plugins/plugin-git/build/plugindist/plugins` when its built.
 

@@ -175,3 +175,13 @@ function finish() {
     examplearray=()
 }
 ```
+
+### Environment Helper script reference:
+| Name             | Type           | Required? | Syntax             | Description                                                                  |
+|------------------|----------------|-----------|--------------------|------------------------------------------------------------------------------|
+| setup()          | Event function | No        | No parameters      | Called prior to importing scripts, used to set up the environment            |
+| emitvars()       | Event function | Yes       | No parameters      | Called after importing scripts, used to write variables to the script engine | 
+| finish()         | Event function | No        | No parameters      | Called after variable import completes to clean up the environment           |
+|                  |                |           |                    |                                                                              |
+| pushVariable     | Function       |           | `"id"` `"value"`   | Assigns variables within the engine                                          |
+| pushArrayElement | Function       |           | `"id"` `"element"` | Adds elements to a named json array variable                                 |

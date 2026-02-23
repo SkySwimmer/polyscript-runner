@@ -36,3 +36,41 @@ To build the library, use polytool build.
 
 
 # Contributing
+We utilize a Centuria-like PolyCraft setup with our repository, which includes a custom branch layout.
+
+Contribution & Development Process:
+```mermaid
+flowchart TB;
+    subgraph fork [Fork process]
+        direction LR;
+        FORK(Fork Repository)-->DEVELOP_BRANCH("Branch `develop`")-->WORK[Work on changes locally...];
+    end
+
+    subgraph submission [Submission process]
+        direction LR;
+        PR_CHANGES[Create pull request of changes]-->|Into| DEVELOP_BRANCH_2(Branch `develop`) --> |If accepted| BUILD_PUSHED_DEVELOP(Build pushed onto the `develop` branch as Develop release);
+    end
+
+    subgraph release_experimental [Experimental release]
+        direction LR;
+        IS_STABLE_D{Build stable enough?} --> | Yes | DEVELOP_BRANCH_3(Branch `develop`) --> | PR'd by maintainers into...| BRANCH_EXPERIMENTAL(Branch `experimental`) --> BUILD_PUSHED_EXPERIMENTAL(Build pushed onto the `experimental` branch as Experimental release);
+    end
+
+    subgraph release_stable [Stable release]
+        direction LR;
+        IS_STABLE{Build stable enough?} --> | Yes | EXPERIMENTAL_BRANCH(Branch `experimental`) --> | PR'd by maintainers into... | STABLE_BRANCH(Branch `stable`) --> BUILD_PUSHED_STABLE(Build pushed onto the `stable` branch as Stable release);
+    end
+
+    fork-->submission;
+    submission-->release_experimental;
+    release_experimental-->release_stable;
+```
+
+## Contribution steps
+To contribute to the repository:
+1. Fork the repository at the `develop` branch (**only forks at develop and into develop are accepted**)
+2. Clone your local repository
+3. Make your changes in the local repository, make sure to keep to the same structure as the rest of the project
+4. Once satisfied, create a pull request to the `develop` branch or a specific `feature-...`, `bugfix-...`, `multipatch-...` branch if expanding on an existing work-in-progress feature. **Please note that other branches are not accepted, stable and experimental are only allowed to be merged into by maintainers.**
+5. Once submitted, the maintainers will review the request, and if accepted, merge it into the target branch
+

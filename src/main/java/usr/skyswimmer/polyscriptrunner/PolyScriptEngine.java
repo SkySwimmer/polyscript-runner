@@ -336,8 +336,8 @@ public class PolyScriptEngine implements Closeable {
 	public PolyScript importScriptBare(PolyScript parent, File script) throws IOException {
 		// Log
 		File scriptRoot = mainScriptFile.getAbsoluteFile().getParentFile();
-		String scriptCanonical = script.getCanonicalPath();
-		String rootCanonical = scriptRoot.getCanonicalPath();
+		String scriptCanonical = script.getCanonicalPath().replace("\\", "/");
+		String rootCanonical = scriptRoot.getCanonicalPath().replace("\\", "/");
 		if (!scriptCanonical.startsWith(rootCanonical))
 			throw new IOException("Importing scripts not relative to the root settings file is unsupported");
 		String pathRelative = scriptCanonical.substring(rootCanonical.length() + 1);
@@ -490,7 +490,7 @@ public class PolyScriptEngine implements Closeable {
 					importFile = new File(scriptWorkingDir, importFile.getPath());
 				if (!importFile.exists())
 					throw new IOException("Imported resource not found: " + importPath);
-				String importCanonical = importFile.getCanonicalPath();
+				String importCanonical = importFile.getCanonicalPath().replace("\\", "/");
 				if (!importCanonical.startsWith(rootCanonical))
 					throw new IOException("Importing resources not relative to the root settings file is unsupported: "
 							+ importPath + ": file outside of script");
@@ -510,7 +510,7 @@ public class PolyScriptEngine implements Closeable {
 
 						// Import
 						JsonVariablesContext ctx = new JsonVariablesContext(proc);
-						if (!importer.importFile(importPathRelative, ctxVar, importFile, this, inst, proc, ctx)) {
+						if (!importer.importFile(importPath, importPathRelative, ctxVar, importFile, this, inst, proc, ctx)) {
 							ctx.close();
 							continue;
 						}

@@ -7,5 +7,5 @@ The PolyScript engine is the interpreter for such files, it provides primarily p
 ## Contents:
 - [PolyScript Sytax and Configuration](PolyScript%20Syntax.md) - The base configuration guide
 - [Root Script](PolyScript%20Root%20Script.md) - The role of root settings file used for build settings
-- [Imported Scripts](Imported%20Scripts.md) - Imported scripts are scripts loaded into an existing script, this includes imports and overloads, this document describes the roles
+- [Imported Scripts](../Variables/Imports) - Imported scripts are scripts loaded into an existing script, this includes imports and overloads
 - [Plugins](Plugins.md) - Plugins can be included to extend behaviour, add additional variables and to support more files for importing resources into variables

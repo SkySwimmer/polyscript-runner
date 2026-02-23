@@ -22,7 +22,7 @@ public class ScriptImporter implements IPolyscriptImporter {
     }
 
     @Override
-    public boolean importFile(String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
+    public boolean importFile(String importRaw, String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
             PolyScript script, JsonVariablesProcessor processor, JsonVariablesContext target) throws IOException {
         PolyScript importedScript = engine.importScript(script, file);
         target.importObject(importedScript.getScriptJson());

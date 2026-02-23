@@ -17,7 +17,7 @@ All PolyScript files are json files with a specific structure, revolving around 
         "shellscript-imports", // Shell-based files
         "directory-imports", // Directory imports
         "json-imports", // JSON imports
-        "git" // Git support through JGit        
+        "git" // Git support through JGit
     ],
 
     // Build settings

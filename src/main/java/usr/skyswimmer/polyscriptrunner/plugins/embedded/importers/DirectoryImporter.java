@@ -24,15 +24,15 @@ public class DirectoryImporter implements IPolyscriptImporter {
     }
 
     @Override
-    public boolean importFile(String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
+    public boolean importFile(String importRaw, String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
             PolyScript script, JsonVariablesProcessor processor, JsonVariablesContext target) throws IOException {
         if (file.isFile())
             return false;
-        importInto(importRelative, targetVariableName, file, engine, script, processor, target, "");
+        importInto(importRaw, importRelative, targetVariableName, file, engine, script, processor, target, "");
         return true;
     }
 
-    private void importInto(String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
+    private void importInto(String importRaw, String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
             PolyScript script,
             JsonVariablesProcessor processor, JsonVariablesContext target, String prefix) throws IOException {
         if (file.isFile()) {
@@ -49,7 +49,7 @@ public class DirectoryImporter implements IPolyscriptImporter {
 
                     // Import
                     JsonVariablesContext ctx = new JsonVariablesContext(processor);
-                    if (!script.getImporterByPattern(pattern).importFile(importRelative, key, file, engine, script,
+                    if (!script.getImporterByPattern(pattern).importFile(importRaw, importRelative, key, file, engine, script,
                             processor, ctx)) {
                         ctx.close();
                         continue;
@@ -69,10 +69,10 @@ public class DirectoryImporter implements IPolyscriptImporter {
 
         // Recurse
         for (File f : file.listFiles(t -> t.isFile()))
-            importInto(importRelative + "/" + f.getName(), targetVariableName, f, engine, script, processor, target,
+            importInto(importRaw + "/" + f.getName(), importRelative + "/" + f.getName(), targetVariableName, f, engine, script, processor, target,
                     prefix);
         for (File subdir : file.listFiles(t -> t.isDirectory()))
-            importInto(importRelative + "/" + subdir.getName(), targetVariableName, subdir, engine, script, processor,
+            importInto(importRaw + "/" + subdir.getName(), importRelative + "/" + subdir.getName(), targetVariableName, subdir, engine, script, processor,
                     target, prefix + subdir.getName() + ".");
     }
 

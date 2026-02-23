@@ -30,7 +30,7 @@ public class JsonFileImporter implements IPolyscriptImporter {
     }
 
     @Override
-    public boolean importFile(String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
+    public boolean importFile(String importRaw, String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
             PolyScript script, JsonVariablesProcessor processor, JsonVariablesContext target) throws IOException {
         // Read JSON
         FileReader reader = new FileReader(file);

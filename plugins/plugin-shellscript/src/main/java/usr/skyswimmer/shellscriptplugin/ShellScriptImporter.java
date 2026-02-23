@@ -33,7 +33,7 @@ public class ShellScriptImporter implements IPolyscriptImporter {
     }
 
     @Override
-    public boolean importFile(String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
+    public boolean importFile(String importRaw, String importRelative, String targetVariableName, File file, PolyScriptEngine engine,
             PolyScript script, JsonVariablesProcessor processor, JsonVariablesContext target) throws IOException {
         // Create random key
         String random = UUID.randomUUID().toString() + UUID.randomUUID().toString() + UUID.randomUUID().toString()
@@ -101,11 +101,11 @@ public class ShellScriptImporter implements IPolyscriptImporter {
         // Write push calls
         if (script.getScriptJson().has("shellenv")) {
             JsonObject shellEnvDefs = JsonUtils.getObjectOrError("polyscript", script.getScriptJson(), "shellenv");
-            if (shellEnvDefs.has(importRelative)) {
+            if (shellEnvDefs.has(importRaw)) {
                 // Load defs
-                JsonElement ele = shellEnvDefs.get(importRelative);
+                JsonElement ele = shellEnvDefs.get(importRaw);
                 if (ele.isJsonObject())
-                    throw new IOException("Invalid shell environment variable: " + importRelative
+                    throw new IOException("Invalid shell environment variable: " + importRaw
                             + ": expected json array or string entry");
                 if (!ele.isJsonArray()) {
                     JsonArray arrT = new JsonArray();
@@ -114,7 +114,7 @@ public class ShellScriptImporter implements IPolyscriptImporter {
                 }
                 for (JsonElement element : ele.getAsJsonArray()) {
                     // Check
-                    String scriptEnv = JsonUtils.getStringOrError(importRelative, element);
+                    String scriptEnv = JsonUtils.getStringOrError(importRaw, element);
                     File envFile = new File(scriptEnv);
                     if (!envFile.isAbsolute())
                         envFile = new File(script.getWorkingDirectory(), envFile.getPath());

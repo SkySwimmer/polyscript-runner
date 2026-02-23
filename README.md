@@ -10,7 +10,7 @@ Furthermore...the engine has some performance issues, which makes it less suitab
 
 # Documentation
 - [User Documentation](docs/user) - User documentation, configuration of build settings for polyscript-powered tools
-- [User Documentation](docs/developer) - Developer documentation, using PolyScript in your own tools
+- [Developer Documentation](docs/developer) - Developer documentation, using PolyScript in your own tools
 
 
 # Building

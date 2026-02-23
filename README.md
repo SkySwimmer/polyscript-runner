@@ -25,6 +25,11 @@ Restoring the project:
 ./polytool restore
 ```
 
+Setting up Eclipse environment:
+```bash
+./polytool eclipse
+```
+
 ## Building
 To build the library, use polytool build.
 

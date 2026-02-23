@@ -74,3 +74,15 @@ To contribute to the repository:
 4. Once satisfied, create a pull request to the `develop` branch or a specific `feature-...`, `bugfix-...`, `multipatch-...` branch if expanding on an existing work-in-progress feature. **Please note that other branches are not accepted, stable and experimental are only allowed to be merged into by maintainers.**
 5. Once submitted, the maintainers will review the request, and if accepted, merge it into the target branch
 
+## Contribution guidelines
+While still work in progress, lets at least set some guidelines until something more permanent is ready.
+
+1. Be respectful to other developers (community or official) while interacting with them, this applies to communication over email, discord, in issues, pull requests and anywhere else.
+2. Try to discuss as much as possible prior to creating alterations or taking on the assignment of new features with our maintainers and other community developers, this will eventually come into its own Developer Community server, but for now, you can communicate with us in the [Fer.ever Discord Community](https://discord.gg/ferever).
+3. Try leaving the current structure, package naming, and class naming intact, we want to retain as much compatibility with older versions as possible and to keep the structure familiar, if you are overhauling something, discuss with the lead maintainers in discord prior to proceeding.
+4. When working with save data files, command syntax, configuration files, make sure to retain compatibility for older data versions, not only in code, but also in saved files. Eg. implement datafixers / converters where needed, and where possible, keep downgrading of versions in mind.
+5. When changing method/function, field, and event syntaxes, make sure to leave a deprecated wrapper of the old syntax to ensure compatibility with older versions.
+6. Keep to the existing structure of the project as much as possible, if uncertain where to place something, reach out to our lead developers or other community developers if uncertain
+7. Prior to taking on the task of implementing new features, fixing bugs or otherwise larger tasks, make sure to ask the developers if they hadnt yet started or planned to take on these tasks themselves, there will be an "assignment board" where you can check in the future, for now, please communicate with our devs prior to starting work on more major content/features.
+
+Sorry if this is a bit vague but i hadnt fully expected to write out contributer guidelines yet lol, we will work on a Code Architecture and Structure Design guide, and more complete Developer Guidelines, as soon as possible.

@@ -1,4 +1,4 @@
-# User Guide for PolyScript Engine
+# User Documentation for PolyScript Engine
 Welcome to the user guide for PolyScript! PolyScript is a library that allows tools created by developers to use build settings scripts for configuring build values based on the script settings in a dynamic variable-based fashion. Example uses for instance is resource processing (eg. emitting json files based on inputs, replacing variable keys with the actual parameters), PolyScript is the base engine for such tools
 
 The user documentation describes how you can configure build settings, view the Developer Documentation for using the PolyScript engine in your own tools.

@@ -18,9 +18,7 @@ Furthermore...the engine has some performance issues, which makes it less suitab
 ## Preparing development environment
 PolyScript Engine uses the PolyTool build helper.
 
-To set up the environment, simply, after cloning, run the following command within bash or Git bash on windows.
-
-Unfortunately PolyTool depends on a POSIX environment, so you will need to use git bash on windows.
+To set up the environment, simply, after cloning, run the following command within bash or Git bash on windows. Unfortunately PolyTool depends on a POSIX environment, so you will need to use git bash on windows.
 
 Restoring the project:
 ```bash
